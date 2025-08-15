@@ -29,7 +29,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		secret := os.Getenv("TODO_PASSWORD")
 		if len(secret) > 0 {
-			cookie, err := r.Cookie("session")
+			cookie, err := r.Cookie("token")
 			if err != nil {
 				http.Error(w, "Authorization cookie missing", http.StatusUnauthorized)
 				return
@@ -54,9 +54,7 @@ func generateToken() (string, error) {
 	secret := []byte(os.Getenv("TODO_PASSWORD"))
 	claims := &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpiration)),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "scheduler",
+			Issuer: "scheduler",
 		},
 	}
 
@@ -74,11 +72,10 @@ func SetToken(passUser string, w http.ResponseWriter) error {
 		return err
 	}
 	cookie := &http.Cookie{
-		Name:     "session",
+		Name:     "token",
 		Value:    token,
 		Path:     "/",
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   cookieMaxAge,
 	}
 	http.SetCookie(w, cookie)
 	return nil

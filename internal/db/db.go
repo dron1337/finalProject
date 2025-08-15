@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dron1337/finalProject/internal/constants"
-
 	_ "modernc.org/sqlite"
 )
 
@@ -23,10 +21,10 @@ CREATE INDEX idx_date ON scheduler(date);`
 
 func Init() error {
 	var err error
-	_, err = os.Stat(constants.DBFile)
+	_, err = os.Stat(os.Getenv("TODO_DBFILE"))
 	install := os.IsNotExist(err)
 
-	DB, err = sql.Open("sqlite", constants.DBFile)
+	DB, err = sql.Open("sqlite", os.Getenv("TODO_DBFILE"))
 	if err != nil {
 		return fmt.Errorf("failed to open database: %v", err)
 	}
