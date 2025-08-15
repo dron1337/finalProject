@@ -163,7 +163,7 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err = SetToken(authorization.Password, w)
 	if err != nil {
-		writeJSON(w, models.TaskResponse{Error: err.Error()}, http.StatusBadRequest)
+		writeJSON(w, models.TaskResponse{Error: err.Error()}, http.StatusUnauthorized)
 		return
 	}
 	writeJSON(w, models.TaskResponse{}, http.StatusOK)
