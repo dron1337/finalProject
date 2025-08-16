@@ -43,7 +43,6 @@ func (t *Task) checkDate() error {
 		t.Date = now.Format(constants.DateFormat)
 		return nil
 	}
-
 	parsedDate, err := time.Parse(constants.DateFormat, t.Date)
 	if err != nil {
 		return fmt.Errorf("invalid start date format, expected YYYYMMDD")
