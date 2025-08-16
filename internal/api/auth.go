@@ -1,82 +1,81 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/securecookie"
 )
 
 const (
 	tokenExpiration = 8 * time.Hour
-	cookieMaxAge    = 480
-)
-
-var (
-	hashKey  = securecookie.GenerateRandomKey(64)
-	blockKey = securecookie.GenerateRandomKey(32)
-	s        = securecookie.New(hashKey, blockKey)
 )
 
 type Claims struct {
 	jwt.RegisteredClaims
+	PasswordHash string `json:"pwd_hash"`
 }
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		secret := os.Getenv("TODO_PASSWORD")
-		if len(secret) > 0 {
-			cookie, err := r.Cookie("token")
-			if err != nil {
-				http.Error(w, "Authorization cookie missing", http.StatusUnauthorized)
-				return
+		if len(secret) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			http.Error(w, "Authorization cookie missing", http.StatusUnauthorized)
+			return
+		}
+
+		token, err := jwt.ParseWithClaims(cookie.Value, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method")
 			}
-			tokenString := cookie.Value
-			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-				}
-				return []byte(secret), nil
-			})
-			if err != nil || token == nil || !token.Valid {
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return []byte(secret), nil
+		})
+		if err != nil || !token.Valid {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+
+		if claims, ok := token.Claims.(*Claims); ok {
+			if claims.PasswordHash != hashPassword(secret) {
+				http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 				return
 			}
 		}
+
 		next.ServeHTTP(w, r)
 	})
 }
 
-func generateToken() (string, error) {
-	secret := []byte(os.Getenv("TODO_PASSWORD"))
+func hashPassword(password string) string {
+	return fmt.Sprintf("%x", password)
+}
+
+func generateToken(secret string) (string, error) {
 	claims := &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer: "scheduler",
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExpiration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
+		PasswordHash: hashPassword(secret),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secret)
+	return token.SignedString([]byte(secret))
 }
 
-func SetToken(passUser string, w http.ResponseWriter) error {
-	passSystem := os.Getenv("TODO_PASSWORD")
-	if passSystem != passUser {
-		return fmt.Errorf("Incorrect password")
-	}
-	token, err := generateToken()
-	if err != nil {
-		return err
-	}
-	cookie := &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
-	}
-	http.SetCookie(w, cookie)
-	return nil
+func sendAuthError(w http.ResponseWriter, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	json.NewEncoder(w).Encode(map[string]string{
+		"error": message,
+	})
 }
