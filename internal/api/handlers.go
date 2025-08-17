@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -194,7 +195,7 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   int(tokenExpiration.Seconds()),
 		SameSite: http.SameSiteStrictMode,
 	})
-
+	fmt.Println(token)
 	writeJSON(w, models.TaskResponse{}, http.StatusOK)
 }
 

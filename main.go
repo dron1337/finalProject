@@ -11,5 +11,10 @@ func main() {
 	if err := db.Init(); err != nil {
 		log.Fatalf("Database initialization failed: %v", err)
 	}
+	defer func() {
+		if err := db.DB.Close(); err != nil {
+			log.Printf("Error closing database: %v", err)
+		}
+	}()
 	server.Run()
 }

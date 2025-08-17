@@ -5,5 +5,5 @@ var (
 	DBFile       = "../scheduler.db"
 	FullNextDate = false
 	Search       = false
-	Token        = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTUzNjMwMTcsImlhdCI6MTc1NTMzNDIxNywicHdkX2hhc2giOiIzMTMyMzMzNDM1In0.i7nTOQdL7G7kR7wIVVk7RSry6pQholUujGYQ9dWVYu8"
+	Token        = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTU0NjM0MzUsImlhdCI6MTc1NTQzNDYzNSwicHdkX2hhc2giOiIzMTMyMzMzNDM1In0.4qRfPRNrGkfY9lFY6S0duvMf5MkuYRgUvI0zbedq-VQ"
 )
